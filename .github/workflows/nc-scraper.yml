@@ -1,0 +1,58 @@
+name: NC Construction Data Scraper
+
+on:
+  workflow_dispatch:
+    inputs:
+      collection_type:
+        description: 'Collection Type (test is faster, full is comprehensive)'
+        required: true
+        default: 'test'
+        type: choice
+        options:
+        - test
+        - full
+  
+  schedule:
+    - cron: '0 3 * * *'  # Daily at 3 AM UTC to check for new bids
+
+jobs:
+  scrape-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360 # 6 hours
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install System Dependencies (Java for Tabula)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y default-jre
+    
+    - name: Install Python Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Create Output Directories
+      run: mkdir -p nc_data/{raw_pdfs,processed_data,reports}
+    
+    - name: Run Python Scraper
+      run: |
+        if [ "${{ github.event.inputs.collection_type }}" = "full" ]; then
+          python nc_bid_scraper.py --mode full
+        else
+          python nc_bid_scraper.py --mode test
+        fi
+    
+    - name: Upload Data Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: nc-construction-bid-data
+        path: nc_data/
+        retention-days: 90
