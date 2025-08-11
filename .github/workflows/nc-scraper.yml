@@ -51,7 +51,7 @@ jobs:
         fi
     
     - name: Upload Data Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4 # <-- This line is now corrected
       with:
         name: nc-construction-bid-data
         path: nc_data/
